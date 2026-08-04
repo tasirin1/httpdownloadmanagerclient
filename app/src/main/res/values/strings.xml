@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Download Manager Client</string>
+    <string name="conn_title">Hubungkan ke Download Manager</string>
+    <string name="conn_subtitle">Masukkan alamat server dari perangkat yang menjalankan aplikasi Download Manager (alamat tampil di layar utama aplikasi itu, biasanya port 8080).</string>
+    <string name="label_host">Alamat IP / host</string>
+    <string name="hint_host">contoh: 192.168.1.10</string>
+    <string name="label_port">Port</string>
+    <string name="hint_port">contoh: 8080</string>
+    <string name="label_pin">PIN (kosongkan jika tidak dipakai)</string>
+    <string name="btn_connect">Hubungkan</string>
+    <string name="btn_clear">Bersihkan</string>
+    <string name="status_connecting">Menghubungkan…</string>
+    <string name="status_ok">Terhubung: %1$s</string>
+    <string name="status_fail">Gagal: %1$s</string>
+    <string name="status_invalid">Isi alamat dan port yang benar</string>
+    <string name="action_refresh">Muat ulang</string>
+    <string name="action_browser">Buka di browser</string>
+    <string name="action_disconnect">Putuskan</string>
+    <string name="download_started">Download disimpan oleh sistem</string>
+    <string name="no_browser">Tidak ada browser terpasang</string>
+</resources>

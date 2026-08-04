@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Download Manager Client</string>
+    <string name="conn_title">Connect to Download Manager</string>
+    <string name="conn_subtitle">Enter the server address from the device running Download Manager (the address is shown on its home screen, usually port 8080).</string>
+    <string name="label_host">IP address / host</string>
+    <string name="hint_host">e.g. 192.168.1.10</string>
+    <string name="label_port">Port</string>
+    <string name="hint_port">e.g. 8080</string>
+    <string name="label_pin">PIN (leave empty if not used)</string>
+    <string name="btn_connect">Connect</string>
+    <string name="btn_clear">Clear</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_ok">Connected: %1$s</string>
+    <string name="status_fail">Failed: %1$s</string>
+    <string name="status_invalid">Enter a valid host and port</string>
+    <string name="action_refresh">Reload</string>
+    <string name="action_browser">Open in browser</string>
+    <string name="action_disconnect">Disconnect</string>
+    <string name="download_started">Download saved by system</string>
+    <string name="no_browser">No browser installed</string>
+</resources>
