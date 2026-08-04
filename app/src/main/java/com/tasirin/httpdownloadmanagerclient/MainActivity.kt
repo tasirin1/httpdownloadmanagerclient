@@ -6,6 +6,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.os.Message
 import android.text.InputType
 import android.view.View
@@ -33,6 +35,10 @@ class MainActivity : AppCompatActivity() {
     private var baseUrl: String = ""
     private var cookie: String = ""
     private var errorDialogShown = false
+    private var customView: View? = null
+    private var customViewCallback: WebChromeClient.CustomViewCallback? = null
+    private val fabHandler = Handler(Looper.getMainLooper())
+    private val fabHideRunnable = Runnable { binding.fabMenu.hide() }
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -76,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         intent.getStringExtra(ConnectionActivity.EXTRA_PENDING_URL)?.let {
             showSendLinkDialog(it)
         }
+        showFabTemporarily()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -84,6 +91,7 @@ class MainActivity : AppCompatActivity() {
         intent.getStringExtra(ConnectionActivity.EXTRA_PENDING_URL)?.let {
             showSendLinkDialog(it)
         }
+        showFabTemporarily()
     }
 
     private fun prefsString(key: String): String? =
@@ -101,6 +109,10 @@ class MainActivity : AppCompatActivity() {
     private fun setupWebView() {
         val web = binding.webView
         val settings = web.settings
+        web.setOnTouchListener { _, _ ->
+            showFabTemporarily()
+            false
+        }
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
         settings.mediaPlaybackRequiresUserGesture = false
@@ -171,6 +183,24 @@ class MainActivity : AppCompatActivity() {
                 resultMsg.sendToTarget()
                 return true
             }
+
+            override fun onShowCustomView(
+                view: View?,
+                callback: CustomViewCallback?
+            ) {
+                if (view == null) return
+                customView = view
+                customViewCallback = callback
+                binding.fullscreenContainer.removeAllViews()
+                binding.fullscreenContainer.addView(view)
+                binding.fullscreenContainer.visibility = View.VISIBLE
+                binding.progress.visibility = View.GONE
+                binding.fabMenu.hide()
+            }
+
+            override fun onHideCustomView() {
+                hideCustomView()
+            }
         }
 
         web.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
@@ -207,7 +237,24 @@ class MainActivity : AppCompatActivity() {
         return fallback.ifEmpty { "download_${System.currentTimeMillis()}" }
     }
 
+    private fun showFabTemporarily() {
+        binding.fabMenu.show()
+        fabHandler.removeCallbacks(fabHideRunnable)
+        fabHandler.postDelayed(fabHideRunnable, 3500)
+    }
+
+    private fun hideCustomView() {
+        val callback = customViewCallback
+        customView?.let { binding.fullscreenContainer.removeView(it) }
+        customView = null
+        customViewCallback = null
+        callback?.onCustomViewHidden()
+        binding.fullscreenContainer.visibility = View.GONE
+        binding.fabMenu.show()
+    }
+
     private fun showFabMenu() {
+        fabHandler.removeCallbacks(fabHideRunnable)
         val options = arrayOf(
             getString(R.string.action_refresh),
             getString(R.string.menu_send_link),
@@ -288,7 +335,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (binding.webView.canGoBack()) {
+        if (customView != null) {
+            hideCustomView()
+        } else if (binding.webView.canGoBack()) {
             binding.webView.goBack()
         } else {
             super.onBackPressed()
@@ -296,6 +345,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        fabHandler.removeCallbacks(fabHideRunnable)
         filePathCallback?.onReceiveValue(null)
         filePathCallback = null
         binding.webView.destroy()
