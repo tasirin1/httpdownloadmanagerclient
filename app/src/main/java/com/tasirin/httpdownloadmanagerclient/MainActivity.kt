@@ -3,6 +3,7 @@ package com.tasirin.httpdownloadmanagerclient
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private var errorDialogShown = false
     private var customView: View? = null
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
+    private var savedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     private val fabHandler = Handler(Looper.getMainLooper())
     private val fabHideRunnable = Runnable { binding.fabMenu.hide() }
 
@@ -191,6 +193,10 @@ class MainActivity : AppCompatActivity() {
                 if (view == null) return
                 customView = view
                 customViewCallback = callback
+                savedOrientation = requestedOrientation
+                runCatching {
+                    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                }
                 binding.fullscreenContainer.removeAllViews()
                 binding.fullscreenContainer.addView(view)
                 binding.fullscreenContainer.visibility = View.VISIBLE
@@ -250,6 +256,9 @@ class MainActivity : AppCompatActivity() {
         customViewCallback = null
         callback?.onCustomViewHidden()
         binding.fullscreenContainer.visibility = View.GONE
+        runCatching {
+            requestedOrientation = savedOrientation
+        }
         binding.fabMenu.show()
     }
 
