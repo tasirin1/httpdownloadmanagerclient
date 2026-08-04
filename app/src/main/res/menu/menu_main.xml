@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_send_link"
+        android:icon="@android:drawable/ic_menu_share"
+        android:title="@string/menu_send_link"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_refresh"
         android:icon="@android:drawable/ic_menu_rotate"
         android:title="@string/action_refresh"

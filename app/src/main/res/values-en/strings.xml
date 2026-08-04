@@ -18,4 +18,20 @@
     <string name="action_disconnect">Disconnect</string>
     <string name="download_started">Download saved by system</string>
     <string name="no_browser">No browser installed</string>
+
+    <string name="btn_discover">Search server on network</string>
+    <string name="status_searching">Searching for servers on the network…</string>
+    <string name="status_none_found">No server found. Make sure both devices are on the same network.</string>
+    <string name="dialog_found_title">Server found</string>
+    <string name="link_incoming">Incoming link</string>
+    <string name="hint_link">Paste or share a download link…</string>
+    <string name="btn_send_link">Send to server</string>
+    <string name="link_sent">Link sent to server</string>
+    <string name="link_send_failed">Send failed: %1$s</string>
+    <string name="link_need_connect">Connect to a server first</string>
+    <string name="menu_send_link">Send link</string>
+    <string name="link_prompt_title">Send download link</string>
+    <string name="link_prompt_hint">File URL (https://…)</string>
+    <string name="action_send">Send</string>
+    <string name="action_cancel">Cancel</string>
 </resources>

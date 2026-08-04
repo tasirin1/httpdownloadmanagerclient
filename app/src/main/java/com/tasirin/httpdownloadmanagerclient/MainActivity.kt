@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.text.InputType
 import android.os.Message
 import android.view.Menu
 import android.view.MenuItem
@@ -17,9 +18,12 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlin.concurrent.thread
 import com.tasirin.httpdownloadmanagerclient.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -67,6 +71,9 @@ class MainActivity : AppCompatActivity() {
         setupCookie()
         setupWebView()
         binding.webView.loadUrl(baseUrl + "/")
+        intent.getStringExtra(ConnectionActivity.EXTRA_PENDING_URL)?.let {
+            showSendLinkDialog(it)
+        }
     }
 
     private fun prefsString(key: String): String? =
@@ -194,6 +201,10 @@ class MainActivity : AppCompatActivity() {
                 finish()
                 true
             }
+            R.id.action_send_link -> {
+                showSendLinkDialog(null)
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -204,6 +215,33 @@ class MainActivity : AppCompatActivity() {
         } else {
             super.onBackPressed()
         }
+    }
+
+    private fun showSendLinkDialog(prefill: String?) {
+        val input = EditText(this)
+        input.hint = getString(R.string.link_prompt_hint)
+        input.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+        input.setText(prefill.orEmpty())
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.link_prompt_title)
+            .setView(input)
+            .setPositiveButton(R.string.action_send) { _, _ ->
+                val url = ServerApi.extractUrl(input.text?.toString())
+                if (url == null) return@setPositiveButton
+                thread {
+                    val error = ServerApi.addDownload(baseUrl, cookie, url)
+                    runOnUiThread {
+                        Toast.makeText(
+                            this,
+                            if (error == null) getString(R.string.link_sent)
+                            else getString(R.string.link_send_failed, error),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
     }
 
     override fun onDestroy() {

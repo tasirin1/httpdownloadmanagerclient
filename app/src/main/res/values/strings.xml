@@ -18,4 +18,20 @@
     <string name="action_disconnect">Putuskan</string>
     <string name="download_started">Download disimpan oleh sistem</string>
     <string name="no_browser">Tidak ada browser terpasang</string>
+
+    <string name="btn_discover">Cari server di jaringan</string>
+    <string name="status_searching">Mencari server di jaringan…</string>
+    <string name="status_none_found">Tidak ada server ditemukan. Pastikan satu jaringan yang sama.</string>
+    <string name="dialog_found_title">Server ditemukan</string>
+    <string name="link_incoming">Link masuk</string>
+    <string name="hint_link">Tempel atau bagikan link download…</string>
+    <string name="btn_send_link">Kirim ke server</string>
+    <string name="link_sent">Link terkirim ke server</string>
+    <string name="link_send_failed">Gagal kirim: %1$s</string>
+    <string name="link_need_connect">Hubungkan dulu ke server</string>
+    <string name="menu_send_link">Kirim link</string>
+    <string name="link_prompt_title">Kirim link download</string>
+    <string name="link_prompt_hint">URL file (https://…)</string>
+    <string name="action_send">Kirim</string>
+    <string name="action_cancel">Batal</string>
 </resources>

@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.tasirin.httpdownloadmanagerclient.databinding.ActivityConnectionBinding
 import kotlin.concurrent.thread
 
@@ -15,6 +16,7 @@ class ConnectionActivity : AppCompatActivity() {
     private val prefs by lazy {
         getSharedPreferences("dm_client", Context.MODE_PRIVATE)
     }
+    private var pendingUrl: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,19 +24,48 @@ class ConnectionActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.inputHost.setText(prefs.getString(KEY_HOST, ""))
-        binding.inputPort.setText(prefs.getInt(KEY_PORT, 8080).toString())
+        binding.inputPort.setText(prefs.getInt(KEY_PORT, ServerApi.DEFAULT_PORT).toString())
         binding.inputPin.setText(prefs.getString(KEY_PIN, ""))
 
         binding.btnConnect.setOnClickListener {
             doConnect()
         }
+        binding.btnDiscover.setOnClickListener {
+            discoverServers()
+        }
+        binding.btnSendLink.setOnClickListener {
+            sendLink()
+        }
         binding.btnClear.setOnClickListener {
             binding.inputHost.text?.clear()
-            binding.inputPort.setText("8080")
+            binding.inputPort.setText(ServerApi.DEFAULT_PORT.toString())
             binding.inputPin.text?.clear()
             binding.txtStatus.text = ""
             prefs.edit().clear().apply()
             Toast.makeText(this, "Disimpan", Toast.LENGTH_SHORT).show()
+        }
+
+        handleIncomingIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        if (intent == null) return
+        val raw = when (intent.action) {
+            Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+            Intent.ACTION_VIEW -> intent.data?.toString()
+            else -> null
+        }
+        val url = ServerApi.extractUrl(raw)
+        if (url != null) {
+            pendingUrl = url
+            binding.inputLink.setText(url)
+            binding.linkCard.visibility = android.view.View.VISIBLE
         }
     }
 
@@ -68,10 +99,89 @@ class ConnectionActivity : AppCompatActivity() {
                         Intent(this, MainActivity::class.java)
                             .putExtra(EXTRA_BASE, result.baseUrl)
                             .putExtra(EXTRA_COOKIE, result.cookie.orEmpty())
+                            .putExtra(EXTRA_PENDING_URL, pendingUrl)
                     )
                     finish()
                 } else {
                     binding.txtStatus.text = getString(R.string.status_fail, result.message)
+                    binding.txtStatus.setTextColor(Color.RED)
+                }
+            }
+        }
+    }
+
+    private fun discoverServers() {
+        val port = binding.inputPort.text?.toString()?.trim()?.toIntOrNull()
+            ?: ServerApi.DEFAULT_PORT
+        binding.btnDiscover.isEnabled = false
+        binding.txtStatus.text = getString(R.string.status_searching)
+        binding.txtStatus.setTextColor(Color.GRAY)
+        thread {
+            val servers = ServerApi.discoverServers(port)
+            runOnUiThread {
+                binding.btnDiscover.isEnabled = true
+                when {
+                    servers.isEmpty() -> {
+                        binding.txtStatus.text = getString(R.string.status_none_found)
+                        binding.txtStatus.setTextColor(Color.RED)
+                    }
+                    servers.size == 1 -> {
+                        val s = servers[0]
+                        binding.inputHost.setText(s.host)
+                        binding.inputPort.setText(s.port.toString())
+                        binding.txtStatus.text = getString(R.string.status_ok, s.url)
+                        binding.txtStatus.setTextColor(Color.parseColor("#178A4C"))
+                        doConnect()
+                    }
+                    else -> {
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.dialog_found_title)
+                            .setItems(
+                                servers.map { it.url }.toTypedArray()
+                            ) { _, which ->
+                                val s = servers[which]
+                                binding.inputHost.setText(s.host)
+                                binding.inputPort.setText(s.port.toString())
+                                binding.txtStatus.text = getString(R.string.status_ok, s.url)
+                                binding.txtStatus.setTextColor(Color.parseColor("#178A4C"))
+                                doConnect()
+                            }
+                            .setNegativeButton(R.string.action_cancel, null)
+                            .show()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun sendLink() {
+        val url = ServerApi.extractUrl(binding.inputLink.text?.toString())
+        if (url == null) {
+            binding.txtStatus.text = getString(R.string.link_need_connect)
+            binding.txtStatus.setTextColor(Color.RED)
+            return
+        }
+        val base = prefs.getString(KEY_BASE, null)
+        if (base.isNullOrEmpty()) {
+            binding.txtStatus.text = getString(R.string.link_need_connect)
+            binding.txtStatus.setTextColor(Color.RED)
+            return
+        }
+        val cookie = prefs.getString(KEY_COOKIE, null)
+        binding.btnSendLink.isEnabled = false
+        binding.txtStatus.text = getString(R.string.status_connecting)
+        binding.txtStatus.setTextColor(Color.GRAY)
+        thread {
+            val error = ServerApi.addDownload(base, cookie, url)
+            runOnUiThread {
+                binding.btnSendLink.isEnabled = true
+                if (error == null) {
+                    binding.txtStatus.text = getString(R.string.link_sent)
+                    binding.txtStatus.setTextColor(Color.parseColor("#178A4C"))
+                    binding.linkCard.visibility = android.view.View.GONE
+                    pendingUrl = null
+                } else {
+                    binding.txtStatus.text = getString(R.string.link_send_failed, error)
                     binding.txtStatus.setTextColor(Color.RED)
                 }
             }
@@ -86,5 +196,6 @@ class ConnectionActivity : AppCompatActivity() {
         const val KEY_COOKIE = "cookie"
         const val EXTRA_BASE = "extra_base"
         const val EXTRA_COOKIE = "extra_cookie"
+        const val EXTRA_PENDING_URL = "extra_pending_url"
     }
 }
