@@ -15,7 +15,6 @@
     <string name="status_invalid">Isi alamat dan port yang benar</string>
     <string name="action_refresh">Muat ulang</string>
     <string name="action_browser">Buka di browser</string>
-    <string name="action_disconnect">Putuskan</string>
     <string name="download_started">Download disimpan oleh sistem</string>
     <string name="no_browser">Tidak ada browser terpasang</string>
 
@@ -34,6 +33,7 @@
     <string name="link_prompt_hint">URL file (https://…)</string>
     <string name="action_send">Kirim</string>
     <string name="action_cancel">Batal</string>
+    <string name="saved">Disimpan</string>
     <string name="cd_fab">Menu</string>
     <string name="menu_change_server">Ganti server</string>
     <string name="action_retry">Coba lagi</string>

@@ -15,7 +15,6 @@
     <string name="status_invalid">Enter a valid host and port</string>
     <string name="action_refresh">Reload</string>
     <string name="action_browser">Open in browser</string>
-    <string name="action_disconnect">Disconnect</string>
     <string name="download_started">Download saved by system</string>
     <string name="no_browser">No browser installed</string>
 
@@ -34,6 +33,7 @@
     <string name="link_prompt_hint">File URL (https://…)</string>
     <string name="action_send">Send</string>
     <string name="action_cancel">Cancel</string>
+    <string name="saved">Saved</string>
     <string name="cd_fab">Menu</string>
     <string name="menu_change_server">Change server</string>
     <string name="action_retry">Retry</string>

@@ -230,17 +230,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun fileNameFrom(url: String, contentDisposition: String?): String {
         contentDisposition?.let { cd ->
-            Regex("filename\\*?=(?:UTF-8'')?\"?([^\";]+)").find(cd)?.groupValues?.get(1)?.let {
+            FILE_NAME_REGEX.find(cd)?.groupValues?.get(1)?.let {
                 val decoded = runCatching {
                     java.net.URLDecoder.decode(it, "UTF-8")
                 }.getOrDefault(it)
-                val clean = decoded.replace(Regex("[/\\\\]"), "_").trim()
+                val clean = decoded.replace(FILE_NAME_CLEAN_REGEX, "_").trim()
                 if (clean.isNotEmpty()) return clean
             }
         }
-        val path = Uri.parse(url).lastPathSegment.orEmpty()
-        val fallback = path.substringAfterLast('/').trim()
+        val fallback = Uri.parse(url).lastPathSegment.orEmpty().trim()
         return fallback.ifEmpty { "download_${System.currentTimeMillis()}" }
+    }
+
+    companion object {
+        private val FILE_NAME_REGEX = Regex("filename\\*?=(?:UTF-8'')?\"?([^\";]+)")
+        private val FILE_NAME_CLEAN_REGEX = Regex("[/\\\\]")
     }
 
     private fun showFabTemporarily() {

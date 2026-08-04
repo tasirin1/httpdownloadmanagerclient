@@ -6,10 +6,14 @@ import java.net.Inet4Address
 import java.net.URL
 import java.net.URLEncoder
 import java.security.MessageDigest
+import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 object ServerApi {
+
+    private val URL_TOKEN_REGEX = Regex("\\s+")
 
     const val DEFAULT_PORT = 8080
     private const val MAX_HOSTS = 254
@@ -64,10 +68,10 @@ object ServerApi {
     fun discoverServers(port: Int): List<ServerInfo> {
         val ips = localIpv4s()
         val ports = listOf(port, DEFAULT_PORT).distinct()
-        val found = java.util.Collections.synchronizedList(mutableListOf<ServerInfo>())
+        val found = Collections.synchronizedList(mutableListOf<ServerInfo>())
         if (ips.isEmpty()) return emptyList()
         val pool = Executors.newFixedThreadPool(SCAN_THREADS)
-        val futures = mutableListOf<java.util.concurrent.Future<*>>()
+        val futures = mutableListOf<Future<*>>()
         for (ip in ips) {
             val base = ip.substringBeforeLast('.')
             for (i in 1..MAX_HOSTS) {
@@ -136,7 +140,7 @@ object ServerApi {
     /** Mengambil URL http/https pertama dari teks (misal isi share atau clipboard). */
     fun extractUrl(text: String?): String? {
         if (text.isNullOrBlank()) return null
-        return text.trim().split(Regex("\\s+")).firstOrNull {
+        return text.trim().split(URL_TOKEN_REGEX).firstOrNull {
             it.startsWith("http://") || it.startsWith("https://")
         }
     }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -17,6 +18,7 @@ class ConnectionActivity : AppCompatActivity() {
         getSharedPreferences("dm_client", Context.MODE_PRIVATE)
     }
     private var pendingUrl: String? = null
+    private val successColor = Color.parseColor("#178A4C")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,48 +38,40 @@ class ConnectionActivity : AppCompatActivity() {
         binding.btnSendLink.setOnClickListener {
             sendLink()
         }
-        binding.btnClear.setOnClickListener {
-            binding.inputHost.text?.clear()
-            binding.inputPort.setText(ServerApi.DEFAULT_PORT.toString())
-            binding.inputPin.text?.clear()
-            binding.txtStatus.text = ""
-            prefs.edit().clear().apply()
-            Toast.makeText(this, "Disimpan", Toast.LENGTH_SHORT).show()
-        }
+        binding.btnClear.setOnClickListener { clearSaved() }
 
-        val force = intent?.getBooleanExtra(EXTRA_FORCE, false) == true
-        val savedBase = prefs.getString(KEY_BASE, null)
-        if (!force && !savedBase.isNullOrEmpty()) {
-            val incoming = extractIncomingUrl(intent)
-            startActivity(
-                Intent(this, MainActivity::class.java)
-                    .putExtra(EXTRA_BASE, savedBase)
-                    .putExtra(EXTRA_COOKIE, prefs.getString(KEY_COOKIE, "").orEmpty())
-                    .putExtra(EXTRA_PENDING_URL, incoming)
-            )
-            finish()
-            return
-        }
+        if (tryAutoForward(intent)) return
         handleIncomingIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if (tryAutoForward(intent)) return
+        handleIncomingIntent(intent)
+    }
+
+    private fun tryAutoForward(intent: Intent?): Boolean {
         val force = intent?.getBooleanExtra(EXTRA_FORCE, false) == true
         val savedBase = prefs.getString(KEY_BASE, null)
-        if (!force && !savedBase.isNullOrEmpty()) {
-            val incoming = extractIncomingUrl(intent)
-            startActivity(
-                Intent(this, MainActivity::class.java)
-                    .putExtra(EXTRA_BASE, savedBase)
-                    .putExtra(EXTRA_COOKIE, prefs.getString(KEY_COOKIE, "").orEmpty())
-                    .putExtra(EXTRA_PENDING_URL, incoming)
-            )
-            finish()
-            return
-        }
-        handleIncomingIntent(intent)
+        if (force || savedBase.isNullOrEmpty()) return false
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .putExtra(EXTRA_BASE, savedBase)
+                .putExtra(EXTRA_COOKIE, prefs.getString(KEY_COOKIE, "").orEmpty())
+                .putExtra(EXTRA_PENDING_URL, extractIncomingUrl(intent))
+        )
+        finish()
+        return true
+    }
+
+    private fun clearSaved() {
+        binding.inputHost.text?.clear()
+        binding.inputPort.setText(ServerApi.DEFAULT_PORT.toString())
+        binding.inputPin.text?.clear()
+        binding.txtStatus.text = ""
+        prefs.edit().clear().apply()
+        Toast.makeText(this, getString(R.string.saved), Toast.LENGTH_SHORT).show()
     }
 
     private fun extractIncomingUrl(intent: Intent?): String? {
@@ -95,7 +89,7 @@ class ConnectionActivity : AppCompatActivity() {
         if (url != null) {
             pendingUrl = url
             binding.inputLink.setText(url)
-            binding.linkCard.visibility = android.view.View.VISIBLE
+            binding.linkCard.visibility = View.VISIBLE
         }
     }
 
@@ -124,7 +118,7 @@ class ConnectionActivity : AppCompatActivity() {
                         .putString(KEY_COOKIE, result.cookie.orEmpty())
                         .apply()
                     binding.txtStatus.text = getString(R.string.status_ok, result.message)
-                    binding.txtStatus.setTextColor(Color.parseColor("#178A4C"))
+                    binding.txtStatus.setTextColor(successColor)
                     startActivity(
                         Intent(this, MainActivity::class.java)
                             .putExtra(EXTRA_BASE, result.baseUrl)
@@ -160,7 +154,7 @@ class ConnectionActivity : AppCompatActivity() {
                         binding.inputHost.setText(s.host)
                         binding.inputPort.setText(s.port.toString())
                         binding.txtStatus.text = getString(R.string.status_ok, s.url)
-                        binding.txtStatus.setTextColor(Color.parseColor("#178A4C"))
+                        binding.txtStatus.setTextColor(successColor)
                         doConnect()
                     }
                     else -> {
@@ -173,7 +167,7 @@ class ConnectionActivity : AppCompatActivity() {
                                 binding.inputHost.setText(s.host)
                                 binding.inputPort.setText(s.port.toString())
                                 binding.txtStatus.text = getString(R.string.status_ok, s.url)
-                                binding.txtStatus.setTextColor(Color.parseColor("#178A4C"))
+                                binding.txtStatus.setTextColor(successColor)
                                 doConnect()
                             }
                             .setNegativeButton(R.string.action_cancel, null)
@@ -207,8 +201,8 @@ class ConnectionActivity : AppCompatActivity() {
                 binding.btnSendLink.isEnabled = true
                 if (error == null) {
                     binding.txtStatus.text = getString(R.string.link_sent)
-                    binding.txtStatus.setTextColor(Color.parseColor("#178A4C"))
-                    binding.linkCard.visibility = android.view.View.GONE
+                    binding.txtStatus.setTextColor(successColor)
+                    binding.linkCard.visibility = View.GONE
                     pendingUrl = null
                 } else {
                     binding.txtStatus.text = getString(R.string.link_send_failed, error)
