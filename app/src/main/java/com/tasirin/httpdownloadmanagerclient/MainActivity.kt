@@ -6,14 +6,14 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.text.InputType
 import android.os.Message
-import android.view.Menu
-import android.view.MenuItem
+import android.text.InputType
+import android.view.View
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -23,8 +23,8 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlin.concurrent.thread
 import com.tasirin.httpdownloadmanagerclient.databinding.ActivityMainBinding
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private var baseUrl: String = ""
     private var cookie: String = ""
+    private var errorDialogShown = false
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -64,13 +65,22 @@ class MainActivity : AppCompatActivity() {
             ?: prefsString(ConnectionActivity.KEY_COOKIE)
             ?: ""
 
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.title = baseUrl.removePrefix("http://")
-        supportActionBar?.subtitle = getString(R.string.app_name)
-
         setupCookie()
         setupWebView()
         binding.webView.loadUrl(baseUrl + "/")
+
+        binding.fabMenu.setOnClickListener {
+            showFabMenu()
+        }
+
+        intent.getStringExtra(ConnectionActivity.EXTRA_PENDING_URL)?.let {
+            showSendLinkDialog(it)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
         intent.getStringExtra(ConnectionActivity.EXTRA_PENDING_URL)?.let {
             showSendLinkDialog(it)
         }
@@ -103,14 +113,34 @@ class MainActivity : AppCompatActivity() {
                 view: WebView?,
                 request: WebResourceRequest?
             ): Boolean = false
+
+            @Suppress("DEPRECATION")
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                if (view?.canGoBack() == false) showConnectionError()
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                if (request?.isForMainFrame == true && view?.canGoBack() == false) {
+                    showConnectionError()
+                }
+            }
         }
 
         web.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 binding.progress.visibility = if (newProgress >= 100) {
-                    android.view.View.GONE
+                    View.GONE
                 } else {
-                    android.view.View.VISIBLE
+                    View.VISIBLE
                 }
                 binding.progress.progress = newProgress
             }
@@ -177,44 +207,57 @@ class MainActivity : AppCompatActivity() {
         return fallback.ifEmpty { "download_${System.currentTimeMillis()}" }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_refresh -> {
-                binding.webView.reload()
-                true
-            }
-            R.id.action_browser -> {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(baseUrl))
-                if (intent.resolveActivity(packageManager) != null) {
-                    startActivity(intent)
-                } else {
-                    Toast.makeText(this, getString(R.string.no_browser), Toast.LENGTH_SHORT).show()
+    private fun showFabMenu() {
+        val options = arrayOf(
+            getString(R.string.action_refresh),
+            getString(R.string.menu_send_link),
+            getString(R.string.action_browser),
+            getString(R.string.menu_change_server)
+        )
+        MaterialAlertDialogBuilder(this)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> binding.webView.reload()
+                    1 -> showSendLinkDialog(null)
+                    2 -> openInBrowser()
+                    3 -> changeServer()
                 }
-                true
             }
-            R.id.action_disconnect -> {
-                finish()
-                true
-            }
-            R.id.action_send_link -> {
-                showSendLinkDialog(null)
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+            .show()
+    }
+
+    private fun openInBrowser() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(baseUrl))
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivity(intent)
+        } else {
+            Toast.makeText(this, getString(R.string.no_browser), Toast.LENGTH_SHORT).show()
         }
     }
 
-    override fun onBackPressed() {
-        if (binding.webView.canGoBack()) {
-            binding.webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
+    private fun changeServer() {
+        startActivity(
+            Intent(this, ConnectionActivity::class.java)
+                .putExtra(ConnectionActivity.EXTRA_FORCE, true)
+        )
+        finish()
+    }
+
+    private fun showConnectionError() {
+        if (errorDialogShown) return
+        errorDialogShown = true
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.error_connect_title)
+            .setMessage(R.string.error_connect_msg)
+            .setPositiveButton(R.string.action_retry) { _, _ ->
+                errorDialogShown = false
+                binding.webView.reload()
+            }
+            .setNegativeButton(R.string.menu_change_server) { _, _ ->
+                changeServer()
+            }
+            .setOnDismissListener { errorDialogShown = false }
+            .show()
     }
 
     private fun showSendLinkDialog(prefill: String?) {
@@ -242,6 +285,14 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton(R.string.action_cancel, null)
             .show()
+    }
+
+    override fun onBackPressed() {
+        if (binding.webView.canGoBack()) {
+            binding.webView.goBack()
+        } else {
+            super.onBackPressed()
+        }
     }
 
     override fun onDestroy() {

@@ -34,4 +34,9 @@
     <string name="link_prompt_hint">URL file (https://…)</string>
     <string name="action_send">Kirim</string>
     <string name="action_cancel">Batal</string>
+    <string name="cd_fab">Menu</string>
+    <string name="menu_change_server">Ganti server</string>
+    <string name="action_retry">Coba lagi</string>
+    <string name="error_connect_title">Tidak dapat terhubung ke server</string>
+    <string name="error_connect_msg">Pastikan server Download Manager berjalan dan alamatnya benar.</string>
 </resources>

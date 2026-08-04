@@ -45,23 +45,53 @@ class ConnectionActivity : AppCompatActivity() {
             Toast.makeText(this, "Disimpan", Toast.LENGTH_SHORT).show()
         }
 
+        val force = intent?.getBooleanExtra(EXTRA_FORCE, false) == true
+        val savedBase = prefs.getString(KEY_BASE, null)
+        if (!force && !savedBase.isNullOrEmpty()) {
+            val incoming = extractIncomingUrl(intent)
+            startActivity(
+                Intent(this, MainActivity::class.java)
+                    .putExtra(EXTRA_BASE, savedBase)
+                    .putExtra(EXTRA_COOKIE, prefs.getString(KEY_COOKIE, "").orEmpty())
+                    .putExtra(EXTRA_PENDING_URL, incoming)
+            )
+            finish()
+            return
+        }
         handleIncomingIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        val force = intent?.getBooleanExtra(EXTRA_FORCE, false) == true
+        val savedBase = prefs.getString(KEY_BASE, null)
+        if (!force && !savedBase.isNullOrEmpty()) {
+            val incoming = extractIncomingUrl(intent)
+            startActivity(
+                Intent(this, MainActivity::class.java)
+                    .putExtra(EXTRA_BASE, savedBase)
+                    .putExtra(EXTRA_COOKIE, prefs.getString(KEY_COOKIE, "").orEmpty())
+                    .putExtra(EXTRA_PENDING_URL, incoming)
+            )
+            finish()
+            return
+        }
         handleIncomingIntent(intent)
     }
 
-    private fun handleIncomingIntent(intent: Intent?) {
-        if (intent == null) return
+    private fun extractIncomingUrl(intent: Intent?): String? {
+        if (intent == null) return null
         val raw = when (intent.action) {
             Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
             Intent.ACTION_VIEW -> intent.data?.toString()
             else -> null
         }
-        val url = ServerApi.extractUrl(raw)
+        return ServerApi.extractUrl(raw)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        val url = extractIncomingUrl(intent)
         if (url != null) {
             pendingUrl = url
             binding.inputLink.setText(url)
@@ -197,5 +227,6 @@ class ConnectionActivity : AppCompatActivity() {
         const val EXTRA_BASE = "extra_base"
         const val EXTRA_COOKIE = "extra_cookie"
         const val EXTRA_PENDING_URL = "extra_pending_url"
+        const val EXTRA_FORCE = "extra_force"
     }
 }

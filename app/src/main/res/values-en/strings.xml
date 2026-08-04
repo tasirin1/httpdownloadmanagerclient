@@ -34,4 +34,9 @@
     <string name="link_prompt_hint">File URL (https://…)</string>
     <string name="action_send">Send</string>
     <string name="action_cancel">Cancel</string>
+    <string name="cd_fab">Menu</string>
+    <string name="menu_change_server">Change server</string>
+    <string name="action_retry">Retry</string>
+    <string name="error_connect_title">Cannot connect to the server</string>
+    <string name="error_connect_msg">Make sure the Download Manager server is running and the address is correct.</string>
 </resources>
